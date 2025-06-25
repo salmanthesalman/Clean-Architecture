@@ -1,10 +1,21 @@
-# Use official .NET 5 runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS base
+# Stage 1: Build
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
+WORKDIR /src
+
+# Copy the .csproj and restore
+COPY ["API/API.csproj", "API/"]
+RUN dotnet restore "API/API.csproj"
+
+# Copy the rest of the source code
+COPY . .
+
+# Publish the app
+WORKDIR "/src/API"
+RUN dotnet publish "API.csproj" -c Release -o /app/publish
+
+# Stage 2: Runtime
+FROM mcr.microsoft.com/dotnet/aspnet:5.0 AS runtime
 WORKDIR /app
-EXPOSE 80
+COPY --from=build /app/publish .
 
-# Copy published output from local build
-COPY ./bin/Release/net5.0/publish/ .
-
-# Run the app
 ENTRYPOINT ["dotnet", "API.dll"]
